@@ -9,7 +9,7 @@ class ExpensesScreen extends StatefulWidget {
 }
 
 class _ExpensesScreenState extends State<ExpensesScreen> {
-  List<String> _registeredMonths = ["Janeiro 2025", "Fevereiro 2025"];
+  List<String> _registeredMonths = [];
   String? _selectedMonth;
 
   void _addNewMonth() {
