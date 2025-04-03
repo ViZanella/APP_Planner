@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:planer/screens/goal_details_screen.dart';
 
 class GoalsScreen extends StatefulWidget {
   const GoalsScreen({super.key});
@@ -9,13 +10,13 @@ class GoalsScreen extends StatefulWidget {
 
 class _GoalsScreenState extends State<GoalsScreen> {
   List<Map<String, String>> _goals = [];
+  String _selectedFilter = "Todas";
 
   void _addNewGoal() {
     showDialog(
       context: context,
       builder: (context) {
         String newGoal = "";
-        String deadline = "";
         String goalType = "Curto Prazo"; // Valor padrão
 
         return AlertDialog(
@@ -28,13 +29,6 @@ class _GoalsScreenState extends State<GoalsScreen> {
                 decoration: const InputDecoration(hintText: "Nome da meta"),
                 onChanged: (value) {
                   newGoal = value;
-                },
-              ),
-              const SizedBox(height: 10),
-              TextField(
-                decoration: const InputDecoration(hintText: "Prazo de conclusão"),
-                onChanged: (value) {
-                  deadline = value;
                 },
               ),
               const SizedBox(height: 10),
@@ -57,11 +51,10 @@ class _GoalsScreenState extends State<GoalsScreen> {
             ),
             TextButton(
               onPressed: () {
-                if (newGoal.isNotEmpty && deadline.isNotEmpty) {
+                if (newGoal.isNotEmpty) {
                   setState(() {
                     _goals.add({
                       "goal": newGoal,
-                      "deadline": deadline,
                       "type": goalType,
                       "status": "Não iniciada",
                     });
@@ -77,44 +70,84 @@ class _GoalsScreenState extends State<GoalsScreen> {
     );
   }
 
+  List<Map<String, String>> _filteredGoals() {
+    if (_selectedFilter == "Todas") return _goals;
+    return _goals.where((goal) => goal["status"] == _selectedFilter).toList();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-            Navigator.pop(context);
-          },
-        ),
-        title: const Text(
-          "Metas",
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+        title: const Text("Metas"),
+        actions: [
+          // Ícone de Adicionar Nova Meta
+          IconButton(
+            icon: const Icon(Icons.add),
+            onPressed: _addNewGoal,
+          ),
+        ],
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(48),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: DropdownButtonHideUnderline(
+              child: Column(
+                children: [
+                  DropdownButton<String>(
+                    value: _selectedFilter,
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedFilter = value!;
+                      });
+                    },
+                    items: ["Todas", "Não iniciada", "Em progresso", "Concluída"]
+                        .map((filter) => DropdownMenuItem(
+                              value: filter,
+                              child: Text(filter),
+                            ))
+                        .toList(),
+                    style: const TextStyle(fontSize: 16, color: Colors.black),
+                    isExpanded: true,
+                    icon: const Icon(Icons.arrow_drop_down),
+                    dropdownColor: Colors.white,
+                  ),
+                  const Divider(height: 1, thickness: 1),
+                ],
+              ),
+            ),
+          ),
         ),
       ),
       body: Column(
         children: [
           Expanded(
-            child: _goals.isEmpty
+            child: _filteredGoals().isEmpty
                 ? const Center(child: Text("Nenhuma meta adicionada"))
                 : ListView.builder(
                     padding: const EdgeInsets.all(16),
-                    itemCount: _goals.length,
+                    itemCount: _filteredGoals().length,
                     itemBuilder: (context, index) {
-                      final goal = _goals[index];
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.grey.shade300),
-                        ),
+                      final goal = _filteredGoals()[index];
+                      return Card(
+                        margin: const EdgeInsets.symmetric(vertical: 8),
                         child: ListTile(
+                          leading: const Icon(Icons.flag),
                           title: Text(goal["goal"]!),
-                          subtitle: Text("${goal["type"]} - Prazo: ${goal["deadline"]!}"),
-                          trailing: const Icon(Icons.arrow_forward_ios, size: 18),
-                          onTap: () {
-                            // Aqui no futuro será direcionado para outra tela de controle detalhado
+                          subtitle: Text("Prazo: ${goal["type"]}"),
+                          trailing: const Icon(Icons.arrow_forward_ios),
+                          onTap: () async {
+                            final result = await Navigator.push(
+                             context,
+                             MaterialPageRoute(
+                               builder: (context) => GoalDetailsScreen(goal: goal),
+                             ),
+                           );
+                          if (result != null) {
+                            setState(() {
+                             goal["status"] = result["status"];
+                            });
+                           }
                           },
                         ),
                       );
@@ -122,18 +155,6 @@ class _GoalsScreenState extends State<GoalsScreen> {
                   ),
           ),
         ],
-      ),
-      floatingActionButton: Container(
-        width: 60,
-        height: 60,
-        decoration: BoxDecoration(
-          color: Colors.brown,
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: IconButton(
-          icon: const Icon(Icons.add, color: Colors.white, size: 30),
-          onPressed: _addNewGoal,
-        ),
       ),
     );
   }
