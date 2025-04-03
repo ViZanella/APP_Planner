@@ -1,75 +1,36 @@
 import 'package:flutter/material.dart';
+import 'package:planer/screens/home_screen.dart';
+import 'package:planer/screens/calendar_screen.dart';
+import 'package:planer/screens/tasks_screen.dart';
+import 'package:planer/screens/goals_screen.dart';
+import 'package:planer/screens/settings_screen.dart';
+import 'package:planer/screens/notes_screen.dart';
+import 'package:planer/screens/expenses_screen.dart';
 
-class GoalsScreen extends StatefulWidget {
-  const GoalsScreen({super.key});
-
-  @override
-  State<GoalsScreen> createState() => _GoalsScreenState();
+void main() {
+  runApp(const MoccaSmartPlanner());
 }
 
-class _GoalsScreenState extends State<GoalsScreen> {
-  List<Map<String, String>> _goals = [];
-  String _selectedFilter = "Todas";
+class MoccaSmartPlanner extends StatelessWidget {
+  const MoccaSmartPlanner({super.key});
 
   @override
   Widget build(BuildContext context) {
-    List<Map<String, String>> filteredGoals = _goals.where((goal) {
-      if (_selectedFilter == "Todas") return true;
-      return goal["status"] == _selectedFilter;
-    }).toList();
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Gestão de Metas"),
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: 'Mocca Smart Planner',
+      theme: ThemeData(
+        primarySwatch: Colors.brown,
       ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: DropdownButtonFormField<String>(
-              value: _selectedFilter,
-              onChanged: (value) {
-                setState(() {
-                  _selectedFilter = value!;
-                });
-              },
-              items: ["Todas", "Concluídas", "Em andamento", "Não iniciadas"]
-                  .map((filter) => DropdownMenuItem(value: filter, child: Text(filter)))
-                  .toList(),
-              decoration: const InputDecoration(
-                labelText: "Filtrar Metas",
-                border: OutlineInputBorder(),
-              ),
-            ),
-          ),
-          Expanded(
-            child: filteredGoals.isEmpty
-                ? const Center(child: Text("Nenhuma meta adicionada"))
-                : ListView.builder(
-                    itemCount: filteredGoals.length,
-                    itemBuilder: (context, index) {
-                      return Card(
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                        child: ListTile(
-                          title: Text(filteredGoals[index]["goal"]!),
-                          subtitle: Text(
-                              "Prazo: ${filteredGoals[index]["deadline"]!} | ${filteredGoals[index]["type"]}"),
-                          trailing: IconButton(
-                            icon: const Icon(Icons.arrow_forward_ios, color: Colors.brown),
-                            onPressed: () {
-                              // Aqui irá a navegação para a tela de controle detalhado da meta
-                            },
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-          ),
-        ],
-      ),
+      home: const HomeScreen(),
+      routes: {
+        '/calendar': (context) => const CalendarScreen(),
+        '/tasks': (context) => const TaskScreen(),
+        '/goals': (context) => const GoalsScreen(),
+        '/settings': (context) => const SettingsScreen(),
+        '/notes': (context) => const NotesScreen(),
+        '/expenses': (context) => const ExpensesScreen(),
+      },
     );
   }
 }
