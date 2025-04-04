@@ -83,7 +83,15 @@ class _CalendarScreenState extends State<CalendarScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Calendário')),
+      appBar: AppBar(
+        title: const Text('Calendário'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.add),
+            onPressed: _addEvent,
+          ),
+        ],
+      ),
       body: Column(
         children: [
           TableCalendar(
@@ -122,10 +130,6 @@ class _CalendarScreenState extends State<CalendarScreen> {
             ),
           ),
         ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _addEvent,
-        child: const Icon(Icons.add),
       ),
     );
   }
