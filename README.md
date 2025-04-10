@@ -1,6 +1,4 @@
-Claro! Aqui está um exemplo de texto para o **README.md** do repositório no GitHub do seu projeto **Mocca Smart Planner** — um texto claro, profissional e acolhedor, refletindo o estilo do app:
 
----
 
 # ☕ Mocca Smart Planner
 
