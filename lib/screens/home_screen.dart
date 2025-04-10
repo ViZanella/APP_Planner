@@ -29,45 +29,45 @@ class HomeScreen extends StatelessWidget {
               ),
             ),
             ListTile(
-              leading: const Icon(Icons.calendar_today),
-              title: const Text('Calendário'),
-              onTap: () {
-                Navigator.pushNamed(context, '/calendar');
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.checklist),
-              title: const Text('Lista de Tarefas'),
-              onTap: () {
-                Navigator.pushNamed(context, '/tasks');
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.flag),
-              title: const Text('Metas'),
-              onTap: () {
-                Navigator.pushNamed(context, '/goals');
-              },
-            ),
-            ListTile(
               leading: const Icon(Icons.settings),
               title: const Text('Configurações'),
               onTap: () {
                 Navigator.pushNamed(context, '/settings');
               },
             ),
-             ListTile(
-              leading: const Icon(Icons.note),
-              title: const Text('Notas'),
+            ListTile(
+              leading: const Icon(Icons.calendar_today),
+              title: const Text('Calendário'),
               onTap: () {
-                Navigator.pushNamed(context, '/notes');
+                Navigator.pushNamed(context, '/calendar');
               },
             ),
-             ListTile(
+                         ListTile(
               leading: const Icon(Icons.attach_money),
               title: const Text('Gestão de Despesas'),
               onTap: () {
                 Navigator.pushNamed(context, '/expenses');
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.flag),
+              title: const Text('Cronograma de Metas'),
+              onTap: () {
+                Navigator.pushNamed(context, '/goals');
+              },
+            ),           
+            ListTile(
+              leading: const Icon(Icons.checklist),
+              title: const Text('Listas de Tarefas'),
+              onTap: () {
+                Navigator.pushNamed(context, '/tasks');
+              },
+            ),
+             ListTile(
+              leading: const Icon(Icons.note),
+              title: const Text('Anotações'),
+              onTap: () {
+                Navigator.pushNamed(context, '/notes');
               },
             ),
           ],

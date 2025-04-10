@@ -20,13 +20,13 @@ class _GoalsScreenState extends State<GoalsScreen> {
         String goalType = "Curto Prazo"; // Valor padrão
 
         return AlertDialog(
-          title: const Text("Adicionar Nova Meta"),
+          title: const Text("Nova Meta"),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               TextField(
                 autofocus: true,
-                decoration: const InputDecoration(hintText: "Nome da meta"),
+                decoration: const InputDecoration(hintText: "Descrição"),
                 onChanged: (value) {
                   newGoal = value;
                 },

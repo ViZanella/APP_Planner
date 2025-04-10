@@ -16,6 +16,9 @@ class _MonthlyExpenseScreenState extends State<MonthlyExpenseScreen> {
   final List<Map<String, dynamic>> _entries = [];
   final List<Map<String, dynamic>> _expenses = [];
 
+  bool _showEntries = false;
+  bool _showExpenses = false;
+
   double get _netBalance => _initialBalance + _income - _totalExpenses;
 
   void _showAddOptions() {
@@ -195,38 +198,70 @@ class _MonthlyExpenseScreenState extends State<MonthlyExpenseScreen> {
     );
   }
 
-  Widget _buildInfoCard(String label, double value, {bool isEditable = false, Function(String)? onChanged}) {
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      elevation: 2,
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              label,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            isEditable
-                ? SizedBox(
-                    width: 100,
-                    child: TextField(
-                      decoration: const InputDecoration(border: InputBorder.none),
-                      keyboardType: TextInputType.number,
-                      textAlign: TextAlign.right,
-                      onChanged: onChanged,
-                    ),
-                  )
-                : Text(
-                    "R\$ ${value.toStringAsFixed(2)}",
-                    style: const TextStyle(fontSize: 16),
-                  ),
-          ],
+  Widget _buildInfoCard(String label, double value, {VoidCallback? onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Card(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        elevation: 2,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 12),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(label, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              Text("R\$ ${value.toStringAsFixed(2)}", style: const TextStyle(fontSize: 16)),
+            ],
+          ),
         ),
       ),
     );
   }
+
+ Widget _buildTableHeader(List<String> columns) {
+  return Container(
+    decoration: BoxDecoration(
+      border: Border.symmetric(horizontal: BorderSide(color: Colors.grey.shade400)),
+    ),
+    child: Row(
+      children: columns
+          .map((col) => Expanded(
+                child: Container(
+                  decoration: const BoxDecoration(
+                    border: Border(
+                      left: BorderSide(color: Colors.grey),  // 👈 borda esquerda
+                      right: BorderSide(color: Colors.grey), // 👈 borda direita
+                    ),
+                  ),
+                  padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+                  child: Text(col, style: const TextStyle(fontWeight: FontWeight.bold)),
+                ),
+              ))
+          .toList(),
+    ),
+  );
+}
+
+Widget _buildTableRow(List<String> values) {
+  return Row(
+    children: values
+        .map((val) => Expanded(
+              child: Container(
+                decoration: BoxDecoration(
+                  border: Border(
+                    left: BorderSide(color: Colors.grey.shade300), // 👈 borda esquerda
+                    right: BorderSide(color: Colors.grey.shade300), // 👈 borda direita
+                    bottom: BorderSide(color: Colors.grey.shade300),
+                  ),
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 6.0, horizontal: 8),
+                child: Text(val),
+              ),
+            ))
+        .toList(),
+  );
+}
+
 
   @override
   Widget build(BuildContext context) {
@@ -234,30 +269,41 @@ class _MonthlyExpenseScreenState extends State<MonthlyExpenseScreen> {
       appBar: AppBar(title: Text("Gestão Financeira - ${widget.monthYear}")),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: ListView(
           children: [
             _buildInfoCard("Saldo Inicial", _initialBalance),
-            _buildInfoCard("Valor de Entrada", _income),
-            _buildInfoCard("Total de Saída", _totalExpenses),
-            _buildInfoCard("Valor Líquido", _netBalance),
-            const SizedBox(height: 10),
-
-            Expanded(
-              child: ListView(
+            _buildInfoCard(
+              "Valor de Entrada",
+              _income,
+              onTap: () => setState(() => _showEntries = !_showEntries),
+            ),
+            if (_showEntries)
+              Column(
                 children: [
-                  ..._entries.map((entry) => ListTile(
-                        title: Text("Entrada: ${entry["source"]}"),
-                        trailing: Text("R\$ ${entry["amount"].toStringAsFixed(2)}"),
-                      )),
-                  ..._expenses.map((expense) => ListTile(
-                        title: Text("Despesa: ${expense["desc"]}"),
-                        subtitle: Text("Categoria: ${expense["category"]}"),
-                        trailing: Text("R\$ ${expense["amount"].toStringAsFixed(2)}"),
-                      )),
+                  _buildTableHeader(["Origem", "Valor"]),
+                  ..._entries.map((entry) => _buildTableRow([
+                        entry["source"],
+                        "R\$ ${entry["amount"].toStringAsFixed(2)}"
+                      ]))
                 ],
               ),
+            _buildInfoCard(
+              "Total de Saída",
+              _totalExpenses,
+              onTap: () => setState(() => _showExpenses = !_showExpenses),
             ),
+            if (_showExpenses)
+              Column(
+                children: [
+                  _buildTableHeader(["Descrição", "Categoria", "Valor"]),
+                  ..._expenses.map((expense) => _buildTableRow([
+                        expense["desc"],
+                        expense["category"],
+                        "R\$ ${expense["amount"].toStringAsFixed(2)}"
+                      ]))
+                ],
+              ),
+            _buildInfoCard("Valor Líquido", _netBalance),
           ],
         ),
       ),

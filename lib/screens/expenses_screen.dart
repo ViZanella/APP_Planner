@@ -19,16 +19,16 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
         String newMonth = "";
         String newYear = "";
         return AlertDialog(
-          title: const Text("Adicionar Novo Mês"),
+          title: const Text("Novo Controle"),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               TextField(
-                decoration: const InputDecoration(hintText: "Mês (Ex: Março)"),
+                decoration: const InputDecoration(hintText: "Mês"),
                 onChanged: (value) => newMonth = value,
               ),
               TextField(
-                decoration: const InputDecoration(hintText: "Ano (Ex: 2025)"),
+                decoration: const InputDecoration(hintText: "Ano"),
                 keyboardType: TextInputType.number,
                 onChanged: (value) => newYear = value,
               ),

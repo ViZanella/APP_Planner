@@ -36,6 +36,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
             },
           ),
 
+          // Notificações
+          SwitchListTile(
+            title: const Text("Notificações"),
+            secondary: const Icon(Icons.notifications),
+            value: _notificationsEnabled,
+            onChanged: (bool value) {
+              setState(() {
+                _notificationsEnabled = value;
+              });
+            },
+          ),
+
           // Tamanho da Fonte
           ListTile(
             leading: const Icon(Icons.text_fields),
@@ -53,18 +65,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 }
               },
             ),
-          ),
-
-          // Notificações
-          SwitchListTile(
-            title: const Text("Notificações"),
-            secondary: const Icon(Icons.notifications),
-            value: _notificationsEnabled,
-            onChanged: (bool value) {
-              setState(() {
-                _notificationsEnabled = value;
-              });
-            },
           ),
 
           // Configurar Senha
