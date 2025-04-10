@@ -10,17 +10,23 @@ class MonthlyExpenseScreen extends StatefulWidget {
 }
 
 class _MonthlyExpenseScreenState extends State<MonthlyExpenseScreen> {
+  // Variáveis principais
   double _initialBalance = 0.0;
   double _income = 0.0;
   double _totalExpenses = 0.0;
+
+  // Listas para armazenar entradas e despesas
   final List<Map<String, dynamic>> _entries = [];
   final List<Map<String, dynamic>> _expenses = [];
 
+  // Flags para mostrar/ocultar detalhes
   bool _showEntries = false;
   bool _showExpenses = false;
 
+  // Cálculo do valor líquido
   double get _netBalance => _initialBalance + _income - _totalExpenses;
 
+  // Exibe opções de adição no botão flutuante
   void _showAddOptions() {
     showModalBottomSheet(
       context: context,
@@ -57,6 +63,7 @@ class _MonthlyExpenseScreenState extends State<MonthlyExpenseScreen> {
     );
   }
 
+  // Função para adicionar saldo inicial
   void _addInitialBalance() {
     double amount = 0.0;
     showDialog(
@@ -89,6 +96,7 @@ class _MonthlyExpenseScreenState extends State<MonthlyExpenseScreen> {
     );
   }
 
+  // Função para adicionar entrada
   void _addIncome() {
     String source = "Salário";
     double amount = 0.0;
@@ -108,9 +116,12 @@ class _MonthlyExpenseScreenState extends State<MonthlyExpenseScreen> {
               ),
               DropdownButtonFormField<String>(
                 value: source,
-                items: ["Salário", "Investimentos", "Outros"].map((String type) {
-                  return DropdownMenuItem(value: type, child: Text(type));
-                }).toList(),
+                items: ["Salário", "Investimentos", "Outros"]
+                    .map((String type) => DropdownMenuItem(
+                          value: type,
+                          child: Text(type),
+                        ))
+                    .toList(),
                 onChanged: (value) {
                   if (value != null) source = value;
                 },
@@ -141,6 +152,7 @@ class _MonthlyExpenseScreenState extends State<MonthlyExpenseScreen> {
     );
   }
 
+  // Função para adicionar despesa
   void _addExpense() {
     String description = "";
     double amount = 0.0;
@@ -165,9 +177,12 @@ class _MonthlyExpenseScreenState extends State<MonthlyExpenseScreen> {
               ),
               DropdownButtonFormField<String>(
                 value: category,
-                items: ["Fixo", "Necessário", "Supérfluo"].map((String type) {
-                  return DropdownMenuItem(value: type, child: Text(type));
-                }).toList(),
+                items: ["Fixo", "Necessário", "Supérfluo"]
+                    .map((String type) => DropdownMenuItem(
+                          value: type,
+                          child: Text(type),
+                        ))
+                    .toList(),
                 onChanged: (value) {
                   if (value != null) category = value;
                 },
@@ -184,7 +199,11 @@ class _MonthlyExpenseScreenState extends State<MonthlyExpenseScreen> {
               onPressed: () {
                 if (description.isNotEmpty && amount > 0) {
                   setState(() {
-                    _expenses.add({"desc": description, "amount": amount, "category": category});
+                    _expenses.add({
+                      "desc": description,
+                      "amount": amount,
+                      "category": category,
+                    });
                     _totalExpenses += amount;
                   });
                 }
@@ -198,6 +217,7 @@ class _MonthlyExpenseScreenState extends State<MonthlyExpenseScreen> {
     );
   }
 
+  // Widget para construir cards com informações financeiras
   Widget _buildInfoCard(String label, double value, {VoidCallback? onTap}) {
     return GestureDetector(
       onTap: onTap,
@@ -209,8 +229,10 @@ class _MonthlyExpenseScreenState extends State<MonthlyExpenseScreen> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(label, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-              Text("R\$ ${value.toStringAsFixed(2)}", style: const TextStyle(fontSize: 16)),
+              Text(label,
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              Text("R\$ ${value.toStringAsFixed(2)}",
+                  style: const TextStyle(fontSize: 16)),
             ],
           ),
         ),
@@ -218,51 +240,53 @@ class _MonthlyExpenseScreenState extends State<MonthlyExpenseScreen> {
     );
   }
 
- Widget _buildTableHeader(List<String> columns) {
-  return Container(
-    decoration: BoxDecoration(
-      border: Border.symmetric(horizontal: BorderSide(color: Colors.grey.shade400)),
-    ),
-    child: Row(
-      children: columns
-          .map((col) => Expanded(
+  // Cabeçalho da tabela (Entradas ou Despesas)
+  Widget _buildTableHeader(List<String> columns) {
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.symmetric(horizontal: BorderSide(color: Colors.grey.shade400)),
+      ),
+      child: Row(
+        children: columns
+            .map((col) => Expanded(
+                  child: Container(
+                    decoration: const BoxDecoration(
+                      border: Border(
+                        left: BorderSide(color: Colors.grey),
+                        right: BorderSide(color: Colors.grey),
+                      ),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+                    child: Text(col, style: const TextStyle(fontWeight: FontWeight.bold)),
+                  ),
+                ))
+            .toList(),
+      ),
+    );
+  }
+
+  // Linha da tabela
+  Widget _buildTableRow(List<String> values) {
+    return Row(
+      children: values
+          .map((val) => Expanded(
                 child: Container(
-                  decoration: const BoxDecoration(
+                  decoration: BoxDecoration(
                     border: Border(
-                      left: BorderSide(color: Colors.grey),  // 👈 borda esquerda
-                      right: BorderSide(color: Colors.grey), // 👈 borda direita
+                      left: BorderSide(color: Colors.grey.shade300),
+                      right: BorderSide(color: Colors.grey.shade300),
+                      bottom: BorderSide(color: Colors.grey.shade300),
                     ),
                   ),
-                  padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
-                  child: Text(col, style: const TextStyle(fontWeight: FontWeight.bold)),
+                  padding: const EdgeInsets.symmetric(vertical: 6.0, horizontal: 8),
+                  child: Text(val),
                 ),
               ))
           .toList(),
-    ),
-  );
-}
+    );
+  }
 
-Widget _buildTableRow(List<String> values) {
-  return Row(
-    children: values
-        .map((val) => Expanded(
-              child: Container(
-                decoration: BoxDecoration(
-                  border: Border(
-                    left: BorderSide(color: Colors.grey.shade300), // 👈 borda esquerda
-                    right: BorderSide(color: Colors.grey.shade300), // 👈 borda direita
-                    bottom: BorderSide(color: Colors.grey.shade300),
-                  ),
-                ),
-                padding: const EdgeInsets.symmetric(vertical: 6.0, horizontal: 8),
-                child: Text(val),
-              ),
-            ))
-        .toList(),
-  );
-}
-
-
+  // Build da tela
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -284,7 +308,7 @@ Widget _buildTableRow(List<String> values) {
                   ..._entries.map((entry) => _buildTableRow([
                         entry["source"],
                         "R\$ ${entry["amount"].toStringAsFixed(2)}"
-                      ]))
+                      ])),
                 ],
               ),
             _buildInfoCard(
@@ -300,7 +324,7 @@ Widget _buildTableRow(List<String> values) {
                         expense["desc"],
                         expense["category"],
                         "R\$ ${expense["amount"].toStringAsFixed(2)}"
-                      ]))
+                      ])),
                 ],
               ),
             _buildInfoCard("Valor Líquido", _netBalance),

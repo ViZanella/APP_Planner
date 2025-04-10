@@ -1,6 +1,8 @@
+// Importa os pacotes necessários
 import 'package:flutter/material.dart';
 import 'package:planer/screens/monthly_expense_screen.dart';
 
+// Tela principal de gestão de despesas mensais
 class ExpensesScreen extends StatefulWidget {
   const ExpensesScreen({super.key});
 
@@ -9,24 +11,31 @@ class ExpensesScreen extends StatefulWidget {
 }
 
 class _ExpensesScreenState extends State<ExpensesScreen> {
+  // Lista que armazena os meses registrados pelo usuário
   List<String> _registeredMonths = [];
+
+  // Mês atualmente selecionado no dropdown
   String? _selectedMonth;
 
+  // Função para adicionar um novo mês/ano ao histórico
   void _addNewMonth() {
     showDialog(
       context: context,
       builder: (context) {
         String newMonth = "";
         String newYear = "";
+
         return AlertDialog(
           title: const Text("Novo Controle"),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              // Campo para inserir o mês
               TextField(
                 decoration: const InputDecoration(hintText: "Mês"),
                 onChanged: (value) => newMonth = value,
               ),
+              // Campo para inserir o ano
               TextField(
                 decoration: const InputDecoration(hintText: "Ano"),
                 keyboardType: TextInputType.number,
@@ -35,10 +44,12 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
             ],
           ),
           actions: [
+            // Botão para cancelar
             TextButton(
               onPressed: () => Navigator.pop(context),
               child: const Text("Cancelar"),
             ),
+            // Botão para salvar o novo mês/ano
             TextButton(
               onPressed: () {
                 if (newMonth.isNotEmpty && newYear.isNotEmpty) {
@@ -46,7 +57,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                     _registeredMonths.add("$newMonth $newYear");
                   });
                 }
-                Navigator.pop(context);
+                Navigator.pop(context); // Fecha o diálogo
               },
               child: const Text("Salvar"),
             ),
@@ -56,18 +67,20 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
     );
   }
 
-void _navigateToMonth(String month) {
-  Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (context) => MonthlyExpenseScreen(monthYear: month),
-    ),
-  );
-}
+  // Função para navegar para a tela de despesas mensais com base no mês selecionado
+  void _navigateToMonth(String month) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => MonthlyExpenseScreen(monthYear: month),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // AppBar com título e botão para adicionar novo mês
       appBar: AppBar(
         title: const Text("Gestão de Despesas"),
         actions: [
@@ -83,7 +96,7 @@ void _navigateToMonth(String month) {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Menu de Seleção de Meses
+            // Dropdown para o usuário selecionar um mês registrado
             Row(
               children: [
                 Expanded(
@@ -101,6 +114,7 @@ void _navigateToMonth(String month) {
                       setState(() {
                         _selectedMonth = value;
                       });
+                      // Ao selecionar um mês, navega automaticamente para a tela correspondente
                       if (value != null) _navigateToMonth(value);
                     },
                   ),
@@ -110,7 +124,7 @@ void _navigateToMonth(String month) {
 
             const SizedBox(height: 20),
 
-            // Lista de meses já registrados (Histórico)
+            // Lista de cartões com os meses já registrados
             Expanded(
               child: ListView.builder(
                 itemCount: _registeredMonths.length,
@@ -121,6 +135,7 @@ void _navigateToMonth(String month) {
                       title: Text(_registeredMonths[index]),
                       leading: const Icon(Icons.calendar_month),
                       trailing: const Icon(Icons.arrow_forward_ios),
+                      // Ao clicar em um dos itens, navega para a tela do mês correspondente
                       onTap: () => _navigateToMonth(_registeredMonths[index]),
                     ),
                   );
