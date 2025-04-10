@@ -39,6 +39,4 @@ A proposta do Mocca é mais do que apenas um planner — é transformar o ato de
 
 Criar um planner digital que una beleza visual, conforto e praticidade, promovendo bem-estar na organização do dia a dia.
 
----
 
-Se quiser, posso adaptar esse texto com o nome da linguagem/framework usado no projeto ou deixar ele mais técnico. Quer?
