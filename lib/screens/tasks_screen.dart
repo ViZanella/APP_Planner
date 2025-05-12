@@ -1,10 +1,7 @@
-// Importa o pacote de widgets do Flutter
 import 'package:flutter/material.dart';
-
-// Importa a tela que mostra as tarefas individuais de cada lista
+import 'package:hive/hive.dart';
 import 'lista_tarefas_screen.dart';
 
-/// Tela principal que exibe as listas de tarefas agrupadas por categorias
 class TaskScreen extends StatefulWidget {
   const TaskScreen({super.key});
 
@@ -13,13 +10,9 @@ class TaskScreen extends StatefulWidget {
 }
 
 class _TaskScreenState extends State<TaskScreen> {
-  // Lista de mapas contendo as listas de tarefas com nome, categoria e tarefas
   List<Map<String, dynamic>> _listas = [];
-
-  // Categoria atual usada para filtrar a exibição das listas
   String _filtroCategoria = "Todas";
 
-  // Lista de categorias disponíveis (inclusive o filtro "Todas")
   final List<String> _categorias = [
     "Todas",
     "Estudos",
@@ -29,12 +22,32 @@ class _TaskScreenState extends State<TaskScreen> {
     "Compras"
   ];
 
-  /// Mostra o diálogo para criar uma nova lista de tarefas
-  void _adicionarNovaLista() {
-    String nomeLista = ""; // Nome da nova lista
-    String categoriaSelecionada = _categorias[1]; // Categoria padrão (Estudos)
+  late Box _taskListsBox;
 
-    // Abre um AlertDialog com campos para nome e categoria
+  @override
+  void initState() {
+    super.initState();
+    _abrirHive();
+  }
+
+  Future<void> _abrirHive() async {
+    _taskListsBox = await Hive.openBox('taskListsBox');
+    final dadosSalvos = _taskListsBox.get('listas');
+    if (dadosSalvos != null) {
+      setState(() {
+        _listas = List<Map<String, dynamic>>.from(dadosSalvos);
+      });
+    }
+  }
+
+  void _salvarHive() {
+    _taskListsBox.put('listas', _listas);
+  }
+
+  void _adicionarNovaLista() {
+    String nomeLista = "";
+    String categoriaSelecionada = _categorias[1];
+
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
@@ -42,13 +55,11 @@ class _TaskScreenState extends State<TaskScreen> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Campo para digitar o nome da lista
             TextField(
               decoration: const InputDecoration(hintText: "Nome da lista"),
               onChanged: (value) => nomeLista = value,
             ),
             const SizedBox(height: 10),
-            // Dropdown para selecionar a categoria (exclui "Todas")
             DropdownButtonFormField<String>(
               value: categoriaSelecionada,
               onChanged: (value) {
@@ -66,12 +77,10 @@ class _TaskScreenState extends State<TaskScreen> {
           ],
         ),
         actions: [
-          // Botão para cancelar
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text("Cancelar"),
           ),
-          // Botão para adicionar nova lista (se o nome não estiver vazio)
           ElevatedButton(
             onPressed: () {
               if (nomeLista.isNotEmpty) {
@@ -81,6 +90,7 @@ class _TaskScreenState extends State<TaskScreen> {
                     "categoria": categoriaSelecionada,
                     "tarefas": [],
                   });
+                  _salvarHive();
                 });
               }
               Navigator.pop(context);
@@ -92,30 +102,25 @@ class _TaskScreenState extends State<TaskScreen> {
     );
   }
 
-  /// Abre a tela de tarefas individuais de uma lista
-  /// e atualiza a lista ao voltar com alterações
   void _abrirLista(Map<String, dynamic> lista) async {
     final resultado = await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => ListaTarefasScreen(lista: lista), // Tela que recebe a lista
+        builder: (_) => ListaTarefasScreen(lista: lista),
       ),
     );
 
-    // Se houver resultado (lista atualizada), substitui a antiga
     if (resultado != null) {
       setState(() {
-        final index = _listas.indexWhere(
-          (elemento) => elemento["nome"] == resultado["nome"],
-        );
+        final index = _listas.indexWhere((e) => e["nome"] == resultado["nome"]);
         if (index != -1) _listas[index] = resultado;
+        _salvarHive();
       });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    // Filtra as listas de acordo com a categoria selecionada
     final listasFiltradas = _filtroCategoria == "Todas"
         ? _listas
         : _listas.where((l) => l["categoria"] == _filtroCategoria).toList();
@@ -124,7 +129,6 @@ class _TaskScreenState extends State<TaskScreen> {
       appBar: AppBar(
         title: const Text("Listas de Tarefa"),
         actions: [
-          // Botão de adicionar nova lista (ícone de "+")
           IconButton(
             icon: const Icon(Icons.add),
             onPressed: _adicionarNovaLista,
@@ -133,7 +137,6 @@ class _TaskScreenState extends State<TaskScreen> {
       ),
       body: Column(
         children: [
-          // Dropdown de filtro por categoria
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             child: DropdownButton<String>(
@@ -152,11 +155,9 @@ class _TaskScreenState extends State<TaskScreen> {
                       ))
                   .toList(),
               isExpanded: true,
-              underline: Container(height: 1, color: Colors.grey), // Linha inferior customizada
+              underline: Container(height: 1, color: Colors.grey),
             ),
           ),
-
-          // Exibição das listas filtradas
           Expanded(
             child: listasFiltradas.isEmpty
                 ? const Center(child: Text("Nenhuma lista encontrada"))
@@ -167,8 +168,8 @@ class _TaskScreenState extends State<TaskScreen> {
                       return ListTile(
                         title: Text(lista["nome"]),
                         subtitle: Text("Categoria: ${lista["categoria"]}"),
-                        trailing: const Icon(Icons.arrow_forward_ios), // Ícone de navegação
-                        onTap: () => _abrirLista(lista), // Abre a lista selecionada
+                        trailing: const Icon(Icons.arrow_forward_ios),
+                        onTap: () => _abrirLista(lista),
                       );
                     },
                   ),

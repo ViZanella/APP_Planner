@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hive/hive.dart';
 
 class MonthlyExpenseScreen extends StatefulWidget {
   final String monthYear;
@@ -10,60 +11,51 @@ class MonthlyExpenseScreen extends StatefulWidget {
 }
 
 class _MonthlyExpenseScreenState extends State<MonthlyExpenseScreen> {
-  // Variáveis principais
   double _initialBalance = 0.0;
   double _income = 0.0;
   double _totalExpenses = 0.0;
 
-  // Listas para armazenar entradas e despesas
-  final List<Map<String, dynamic>> _entries = [];
-  final List<Map<String, dynamic>> _expenses = [];
+  List<Map<String, dynamic>> _entries = [];
+  List<Map<String, dynamic>> _expenses = [];
 
-  // Flags para mostrar/ocultar detalhes
   bool _showEntries = false;
   bool _showExpenses = false;
 
-  // Cálculo do valor líquido
+  Box? _financeBox;
+
   double get _netBalance => _initialBalance + _income - _totalExpenses;
 
-  // Exibe opções de adição no botão flutuante
-  void _showAddOptions() {
-    showModalBottomSheet(
-      context: context,
-      builder: (context) {
-        return Wrap(
-          children: [
-            ListTile(
-              leading: const Icon(Icons.account_balance),
-              title: const Text("Adicionar Saldo Inicial"),
-              onTap: () {
-                Navigator.pop(context);
-                _addInitialBalance();
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.attach_money),
-              title: const Text("Adicionar Entrada"),
-              onTap: () {
-                Navigator.pop(context);
-                _addIncome();
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.shopping_cart),
-              title: const Text("Adicionar Despesa"),
-              onTap: () {
-                Navigator.pop(context);
-                _addExpense();
-              },
-            ),
-          ],
-        );
-      },
-    );
+  @override
+  void initState() {
+    super.initState();
+    _loadFromHive();
   }
 
-  // Função para adicionar saldo inicial
+  void _loadFromHive() async {
+    final boxName = 'finance_${widget.monthYear.replaceAll(' ', '_')}';
+    _financeBox = await Hive.openBox(boxName);
+
+    setState(() {
+      _initialBalance = _financeBox?.get('initialBalance', defaultValue: 0.0) ?? 0.0;
+      _income = _financeBox?.get('income', defaultValue: 0.0) ?? 0.0;
+      _totalExpenses = _financeBox?.get('totalExpenses', defaultValue: 0.0) ?? 0.0;
+      _entries = List<Map<String, dynamic>>.from(
+        _financeBox?.get('entries', defaultValue: []) ?? [],
+      );
+      _expenses = List<Map<String, dynamic>>.from(
+        _financeBox?.get('expenses', defaultValue: []) ?? [],
+      );
+    });
+  }
+
+  void _saveToHive() {
+    _financeBox?.put('initialBalance', _initialBalance);
+    _financeBox?.put('income', _income);
+    _financeBox?.put('totalExpenses', _totalExpenses);
+    _financeBox?.put('entries', _entries);
+    _financeBox?.put('expenses', _expenses);
+  }
+
   void _addInitialBalance() {
     double amount = 0.0;
     showDialog(
@@ -72,19 +64,17 @@ class _MonthlyExpenseScreenState extends State<MonthlyExpenseScreen> {
         return AlertDialog(
           title: const Text("Adicionar Saldo Inicial"),
           content: TextField(
-            decoration: const InputDecoration(labelText: "Valor"),
             keyboardType: TextInputType.number,
+            decoration: const InputDecoration(labelText: "Valor"),
             onChanged: (value) => amount = double.tryParse(value) ?? 0.0,
           ),
           actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("Cancelar"),
-            ),
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancelar")),
             TextButton(
               onPressed: () {
                 setState(() {
                   _initialBalance = amount;
+                  _saveToHive();
                 });
                 Navigator.pop(context);
               },
@@ -96,11 +86,9 @@ class _MonthlyExpenseScreenState extends State<MonthlyExpenseScreen> {
     );
   }
 
-  // Função para adicionar entrada
   void _addIncome() {
     String source = "Salário";
     double amount = 0.0;
-
     showDialog(
       context: context,
       builder: (context) {
@@ -110,36 +98,31 @@ class _MonthlyExpenseScreenState extends State<MonthlyExpenseScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               TextField(
-                decoration: const InputDecoration(labelText: "Valor"),
                 keyboardType: TextInputType.number,
+                decoration: const InputDecoration(labelText: "Valor"),
                 onChanged: (value) => amount = double.tryParse(value) ?? 0.0,
               ),
               DropdownButtonFormField<String>(
                 value: source,
+                decoration: const InputDecoration(labelText: "Origem"),
                 items: ["Salário", "Investimentos", "Outros"]
-                    .map((String type) => DropdownMenuItem(
-                          value: type,
-                          child: Text(type),
-                        ))
+                    .map((s) => DropdownMenuItem(value: s, child: Text(s)))
                     .toList(),
                 onChanged: (value) {
                   if (value != null) source = value;
                 },
-                decoration: const InputDecoration(labelText: "Origem"),
               ),
             ],
           ),
           actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("Cancelar"),
-            ),
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancelar")),
             TextButton(
               onPressed: () {
                 if (amount > 0) {
                   setState(() {
                     _entries.add({"amount": amount, "source": source});
                     _income += amount;
+                    _saveToHive();
                   });
                 }
                 Navigator.pop(context);
@@ -152,7 +135,6 @@ class _MonthlyExpenseScreenState extends State<MonthlyExpenseScreen> {
     );
   }
 
-  // Função para adicionar despesa
   void _addExpense() {
     String description = "";
     double amount = 0.0;
@@ -171,40 +153,31 @@ class _MonthlyExpenseScreenState extends State<MonthlyExpenseScreen> {
                 onChanged: (value) => description = value,
               ),
               TextField(
-                decoration: const InputDecoration(labelText: "Valor"),
                 keyboardType: TextInputType.number,
+                decoration: const InputDecoration(labelText: "Valor"),
                 onChanged: (value) => amount = double.tryParse(value) ?? 0.0,
               ),
               DropdownButtonFormField<String>(
                 value: category,
+                decoration: const InputDecoration(labelText: "Categoria"),
                 items: ["Fixo", "Necessário", "Supérfluo"]
-                    .map((String type) => DropdownMenuItem(
-                          value: type,
-                          child: Text(type),
-                        ))
+                    .map((c) => DropdownMenuItem(value: c, child: Text(c)))
                     .toList(),
                 onChanged: (value) {
                   if (value != null) category = value;
                 },
-                decoration: const InputDecoration(labelText: "Categoria"),
               ),
             ],
           ),
           actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("Cancelar"),
-            ),
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancelar")),
             TextButton(
               onPressed: () {
                 if (description.isNotEmpty && amount > 0) {
                   setState(() {
-                    _expenses.add({
-                      "desc": description,
-                      "amount": amount,
-                      "category": category,
-                    });
+                    _expenses.add({"desc": description, "amount": amount, "category": category});
                     _totalExpenses += amount;
+                    _saveToHive();
                   });
                 }
                 Navigator.pop(context);
@@ -217,22 +190,53 @@ class _MonthlyExpenseScreenState extends State<MonthlyExpenseScreen> {
     );
   }
 
-  // Widget para construir cards com informações financeiras
+  void _showAddOptions() {
+    showModalBottomSheet(
+      context: context,
+      builder: (_) => Wrap(
+        children: [
+          ListTile(
+            leading: const Icon(Icons.account_balance),
+            title: const Text("Adicionar Saldo Inicial"),
+            onTap: () {
+              Navigator.pop(context);
+              _addInitialBalance();
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.attach_money),
+            title: const Text("Adicionar Entrada"),
+            onTap: () {
+              Navigator.pop(context);
+              _addIncome();
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.shopping_cart),
+            title: const Text("Adicionar Despesa"),
+            onTap: () {
+              Navigator.pop(context);
+              _addExpense();
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildInfoCard(String label, double value, {VoidCallback? onTap}) {
     return GestureDetector(
       onTap: onTap,
       child: Card(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         elevation: 2,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(label,
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-              Text("R\$ ${value.toStringAsFixed(2)}",
-                  style: const TextStyle(fontSize: 16)),
+              Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
+              Text("R\$ ${value.toStringAsFixed(2)}"),
             ],
           ),
         ),
@@ -240,93 +244,70 @@ class _MonthlyExpenseScreenState extends State<MonthlyExpenseScreen> {
     );
   }
 
-  // Cabeçalho da tabela (Entradas ou Despesas)
-  Widget _buildTableHeader(List<String> columns) {
-    return Container(
-      decoration: BoxDecoration(
-        border: Border.symmetric(horizontal: BorderSide(color: Colors.grey.shade400)),
-      ),
-      child: Row(
-        children: columns
-            .map((col) => Expanded(
-                  child: Container(
-                    decoration: const BoxDecoration(
-                      border: Border(
-                        left: BorderSide(color: Colors.grey),
-                        right: BorderSide(color: Colors.grey),
-                      ),
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
-                    child: Text(col, style: const TextStyle(fontWeight: FontWeight.bold)),
-                  ),
-                ))
-            .toList(),
-      ),
-    );
-  }
-
-  // Linha da tabela
-  Widget _buildTableRow(List<String> values) {
+  Widget _buildTableHeader(List<String> headers) {
     return Row(
-      children: values
-          .map((val) => Expanded(
+      children: headers
+          .map((h) => Expanded(
                 child: Container(
+                  padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    border: Border(
-                      left: BorderSide(color: Colors.grey.shade300),
-                      right: BorderSide(color: Colors.grey.shade300),
-                      bottom: BorderSide(color: Colors.grey.shade300),
-                    ),
+                    border: Border.all(color: Colors.grey.shade400),
                   ),
-                  padding: const EdgeInsets.symmetric(vertical: 6.0, horizontal: 8),
-                  child: Text(val),
+                  child: Text(h, style: const TextStyle(fontWeight: FontWeight.bold)),
                 ),
               ))
           .toList(),
     );
   }
 
-  // Build da tela
+  Widget _buildTableRow(List<String> values) {
+    return Row(
+      children: values
+          .map((v) => Expanded(
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    border: Border.symmetric(
+                      horizontal: BorderSide(color: Colors.grey.shade300),
+                    ),
+                  ),
+                  child: Text(v),
+                ),
+              ))
+          .toList(),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text("Gestão Financeira - ${widget.monthYear}")),
       body: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(16),
         child: ListView(
           children: [
             _buildInfoCard("Saldo Inicial", _initialBalance),
-            _buildInfoCard(
-              "Valor de Entrada",
-              _income,
-              onTap: () => setState(() => _showEntries = !_showEntries),
-            ),
-            if (_showEntries)
-              Column(
-                children: [
-                  _buildTableHeader(["Origem", "Valor"]),
-                  ..._entries.map((entry) => _buildTableRow([
-                        entry["source"],
-                        "R\$ ${entry["amount"].toStringAsFixed(2)}"
-                      ])),
-                ],
-              ),
-            _buildInfoCard(
-              "Total de Saída",
-              _totalExpenses,
-              onTap: () => setState(() => _showExpenses = !_showExpenses),
-            ),
-            if (_showExpenses)
-              Column(
-                children: [
-                  _buildTableHeader(["Descrição", "Categoria", "Valor"]),
-                  ..._expenses.map((expense) => _buildTableRow([
-                        expense["desc"],
-                        expense["category"],
-                        "R\$ ${expense["amount"].toStringAsFixed(2)}"
-                      ])),
-                ],
-              ),
+            _buildInfoCard("Valor de Entrada", _income, onTap: () {
+              setState(() => _showEntries = !_showEntries);
+            }),
+            if (_showEntries) ...[
+              _buildTableHeader(["Origem", "Valor"]),
+              ..._entries.map((e) => _buildTableRow([
+                    e["source"],
+                    "R\$ ${e["amount"].toStringAsFixed(2)}"
+                  ])),
+            ],
+            _buildInfoCard("Total de Saída", _totalExpenses, onTap: () {
+              setState(() => _showExpenses = !_showExpenses);
+            }),
+            if (_showExpenses) ...[
+              _buildTableHeader(["Descrição", "Categoria", "Valor"]),
+              ..._expenses.map((e) => _buildTableRow([
+                    e["desc"],
+                    e["category"],
+                    "R\$ ${e["amount"].toStringAsFixed(2)}"
+                  ])),
+            ],
             _buildInfoCard("Valor Líquido", _netBalance),
           ],
         ),

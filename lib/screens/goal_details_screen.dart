@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:hive/hive.dart';
 
-// Tela de detalhes de uma meta específica (goal)
 class GoalDetailsScreen extends StatefulWidget {
-  final Map<String, String> goal; // Recebe os dados da meta (nome, tipo, status, etc.)
+  final Map<String, dynamic> goal;
 
   const GoalDetailsScreen({super.key, required this.goal});
 
@@ -11,40 +11,63 @@ class GoalDetailsScreen extends StatefulWidget {
 }
 
 class _GoalDetailsScreenState extends State<GoalDetailsScreen> {
-  late String _status; // Armazena o status atual da meta
-  String _selectedAplicacao = "Mensal"; // Frequência de acompanhamento
-  String _selectedMes = "Mês 1"; // Mês atual selecionado
-  final TextEditingController _notesController = TextEditingController(); // Controller do campo de texto (detalhes da meta)
-
-  // Armazena os checklists associados a cada mês (ex: {"Mês 1": [{"descricao": "Estudar Flutter", "feito": false}]})
+  late String _status;
+  String _selectedAplicacao = "Mensal";
+  String _selectedMes = "Mês 1";
+  int _quantidadeAplicacao = 1;
+  final TextEditingController _notesController = TextEditingController();
   final Map<String, List<Map<String, dynamic>>> _checklistsPorMes = {};
+
+  late Box goalBox;
 
   @override
   void initState() {
     super.initState();
-    _status = widget.goal["status"] ?? "Não iniciada"; // Inicializa o status com o valor da meta recebida
-  }
+    _status = widget.goal["status"] ?? "Não iniciada";
+    _notesController.text = widget.goal["notes"] ?? "";
 
-  // Retorna a quantidade de meses com base na aplicação escolhida
-  int _getMesCount(String aplicacao) {
-    switch (aplicacao) {
-      case "Mensal": return 12;
-      case "Bimestral": return 6;
-      case "Trimestral": return 4;
-      case "Semestral": return 2;
-      case "Anual": return 1;
-      default: return 0;
+    goalBox = Hive.box('goalsBox');
+
+    // Recupera os dados salvos se houver
+    final savedGoal = goalBox.get(widget.goal["id"]);
+    if (savedGoal != null) {
+      _status = savedGoal["status"] ?? _status;
+      _selectedAplicacao = savedGoal["aplicacao"] ?? _selectedAplicacao;
+      _quantidadeAplicacao = savedGoal["quantidade"] ?? _quantidadeAplicacao;
+      _notesController.text = savedGoal["notes"] ?? "";
+      _checklistsPorMes.addAll(Map<String, List<Map<String, dynamic>>>.from(savedGoal["checklists"] ?? {}));
     }
   }
 
-  // Adiciona um novo item ao checklist de um mês específico
+  int _getTotalPeriodos() {
+    switch (_selectedAplicacao) {
+      case "Mensal":
+        return 1 * _quantidadeAplicacao;
+      case "Bimestral":
+        return 2 * _quantidadeAplicacao;
+      case "Trimestral":
+        return 3 * _quantidadeAplicacao;
+      case "Semestral":
+        return 6 * _quantidadeAplicacao;
+      case "Anual":
+        return 12 * _quantidadeAplicacao;
+      default:
+        return 0;
+    }
+  }
+
+  List<String> _gerarMeses() {
+    int totalMeses = _getTotalPeriodos();
+    return List.generate(totalMeses, (index) => "Mês ${index + 1}");
+  }
+
   void _adicionarItemChecklist(String mes) {
     TextEditingController controller = TextEditingController();
 
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: Text("Adicionar item para $mes"),
+        title: Text("Novo item para $mes"),
         content: TextField(
           controller: controller,
           decoration: const InputDecoration(labelText: "Descrição do item"),
@@ -60,10 +83,7 @@ class _GoalDetailsScreenState extends State<GoalDetailsScreen> {
               if (descricao.isNotEmpty) {
                 setState(() {
                   _checklistsPorMes.putIfAbsent(mes, () => []);
-                  _checklistsPorMes[mes]!.add({
-                    "descricao": descricao,
-                    "feito": false,
-                  });
+                  _checklistsPorMes[mes]!.add({"descricao": descricao, "feito": false});
                 });
               }
               Navigator.pop(context);
@@ -75,18 +95,23 @@ class _GoalDetailsScreenState extends State<GoalDetailsScreen> {
     );
   }
 
+  void _salvarDadosHive() {
+    goalBox.put(widget.goal["id"], {
+      "status": _status,
+      "notes": _notesController.text,
+      "aplicacao": _selectedAplicacao,
+      "quantidade": _quantidadeAplicacao,
+      "checklists": _checklistsPorMes,
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Gera os nomes dos meses com base na aplicação (frequência)
-    final int mesCount = _getMesCount(_selectedAplicacao);
-    final List<String> meses = List.generate(mesCount, (index) => "Mês ${index + 1}");
-
-    // Garante que o mês selecionado ainda existe
+    final List<String> meses = _gerarMeses();
     if (!meses.contains(_selectedMes)) {
-      _selectedMes = meses.first;
+      _selectedMes = meses.isNotEmpty ? meses.first : "Mês 1";
     }
 
-    // Recupera o checklist do mês atual
     final checklistAtual = _checklistsPorMes[_selectedMes] ?? [];
 
     return Scaffold(
@@ -94,166 +119,108 @@ class _GoalDetailsScreenState extends State<GoalDetailsScreen> {
         title: const Text("Detalhes da Meta"),
       ),
       body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            Text(widget.goal["goal"] ?? "", style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            Text(widget.goal["type"] ?? "", style: const TextStyle(fontSize: 16)),
+            const SizedBox(height: 20),
 
-              // Nome da meta
-              Text(
-                widget.goal["goal"]!,
-                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-              ),
+            const Text("Descrição da Meta", style: TextStyle(fontWeight: FontWeight.bold)),
+            TextField(controller: _notesController, maxLines: 3, decoration: const InputDecoration(border: OutlineInputBorder())),
+            const SizedBox(height: 20),
 
-              const SizedBox(height: 10),
-
-              // Tipo da meta
-              Text(widget.goal["type"] ?? "", style: const TextStyle(fontSize: 16)),
-
-              const SizedBox(height: 20),
-
-              // Campo para anotações ou descrição da meta
-              TextField(
-                controller: _notesController,
-                maxLines: 3,
-                decoration: const InputDecoration(
-                  labelText: "Detalhes da meta",
-                  border: OutlineInputBorder(),
+            Row(
+              children: [
+                Expanded(
+                  child: DropdownButtonFormField<String>(
+                    value: _status,
+                    decoration: const InputDecoration(labelText: "Status"),
+                    items: ["Não iniciada", "Em progresso", "Concluída"]
+                        .map((status) => DropdownMenuItem(value: status, child: Text(status)))
+                        .toList(),
+                    onChanged: (value) => setState(() => _status = value!),
+                  ),
                 ),
-              ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: DropdownButtonFormField<String>(
+                    value: _selectedAplicacao,
+                    decoration: const InputDecoration(labelText: "Aplicação"),
+                    items: ["Mensal", "Bimestral", "Trimestral", "Semestral", "Anual"]
+                        .map((freq) => DropdownMenuItem(value: freq, child: Text(freq)))
+                        .toList(),
+                    onChanged: (value) => setState(() => _selectedAplicacao = value!),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                SizedBox(
+                  width: 60,
+                  child: TextFormField(
+                    initialValue: _quantidadeAplicacao.toString(),
+                    decoration: const InputDecoration(labelText: "Qtd"),
+                    keyboardType: TextInputType.number,
+                    onChanged: (value) {
+                      setState(() {
+                        _quantidadeAplicacao = int.tryParse(value) ?? 1;
+                      });
+                    },
+                  ),
+                ),
+              ],
+            ),
 
-              const SizedBox(height: 20),
+            const SizedBox(height: 20),
 
-              // Dropdown para selecionar o status atual da meta
-              DropdownButtonFormField<String>(
-                value: _status,
-                decoration: const InputDecoration(labelText: "Status"),
-                items: ["Não iniciada", "Em progresso", "Concluída"]
-                    .map((status) => DropdownMenuItem(value: status, child: Text(status)))
-                    .toList(),
-                onChanged: (value) {
-                  setState(() {
-                    _status = value!;
-                  });
-                },
-              ),
+            Row(
+              children: [
+                Expanded(
+                  child: DropdownButtonFormField<String>(
+                    value: _selectedMes,
+                    decoration: const InputDecoration(labelText: "Mês"),
+                    items: meses
+                        .map((mes) => DropdownMenuItem(value: mes, child: Text(mes)))
+                        .toList(),
+                    onChanged: (value) => setState(() => _selectedMes = value!),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.add_circle_outline),
+                  onPressed: () => _adicionarItemChecklist(_selectedMes),
+                ),
+              ],
+            ),
 
-              const SizedBox(height: 20),
+            const SizedBox(height: 20),
 
-              // Dropdown para selecionar a aplicação (frequência)
-              DropdownButtonFormField<String>(
-                value: _selectedAplicacao,
-                decoration: const InputDecoration(labelText: "Aplicação"),
-                items: ["Mensal", "Bimestral", "Trimestral", "Semestral", "Anual"]
-                    .map((freq) => DropdownMenuItem(value: freq, child: Text(freq)))
-                    .toList(),
-                onChanged: (value) {
-                  setState(() {
-                    _selectedAplicacao = value!;
-                  });
-                },
-              ),
-
-              const SizedBox(height: 20),
-
-              // Dropdown de mês + botão para adicionar item
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: DropdownButtonFormField<String>(
-                      value: _selectedMes,
-                      decoration: const InputDecoration(labelText: "Mês"),
-                      items: meses
-                          .map((mes) => DropdownMenuItem(value: mes, child: Text(mes)))
-                          .toList(),
+            if (checklistAtual.isNotEmpty)
+              ...checklistAtual.map((item) => ListTile(
+                    title: Text(item["descricao"]),
+                    trailing: Checkbox(
+                      value: item["feito"],
                       onChanged: (value) {
-                        setState(() {
-                          _selectedMes = value!;
-                        });
+                        setState(() => item["feito"] = value!);
                       },
                     ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.add_circle_outline, size: 28),
-                    tooltip: "Adicionar item ao mês selecionado",
-                    onPressed: () => _adicionarItemChecklist(_selectedMes),
-                  ),
-                ],
-              ),
+                  )),
 
-              const SizedBox(height: 20),
+            const Spacer(),
 
-              // Exibe a checklist atual, se houver
-              if (checklistAtual.isNotEmpty)
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 8.0),
-                      child: Text(
-                        "Check List",
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                      ),
-                    ),
-                    Container(
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey.shade300),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Column(
-                        children: checklistAtual.map((item) {
-                          return Row(
-                            children: [
-                              // Descrição do item
-                              Expanded(
-                                flex: 3,
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 12.0),
-                                  child: Text(item["descricao"]),
-                                ),
-                              ),
-                              // Checkbox de conclusão
-                              Expanded(
-                                flex: 1,
-                                child: Checkbox(
-                                  value: item["feito"],
-                                  onChanged: (value) {
-                                    setState(() {
-                                      item["feito"] = value;
-                                    });
-                                  },
-                                ),
-                              ),
-                            ],
-                          );
-                        }).toList(),
-                      ),
-                    ),
-                  ],
-                ),
-
-              const SizedBox(height: 30),
-
-              // Botão para salvar alterações e retornar à tela anterior
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.pop(context, {
-                      "status": _status,
-                      "notes": _notesController.text,
-                      "aplicacao": _selectedAplicacao,
-                      "mes": _selectedMes,
-                      "checklists": _checklistsPorMes,
-                    });
-                  },
-                  child: const Text("Salvar Alterações"),
-                ),
-              ),
-            ],
-          ),
+            ElevatedButton(
+              onPressed: () {
+                _salvarDadosHive();
+                Navigator.pop(context, {
+                  "status": _status,
+                  "notes": _notesController.text,
+                  "aplicacao": _selectedAplicacao,
+                  "quantidade": _quantidadeAplicacao,
+                  "checklists": _checklistsPorMes,
+                });
+              },
+              child: const Text("Salvar Alterações"),
+            ),
+          ],
         ),
       ),
     );

@@ -1,7 +1,8 @@
-// Importa o pacote de componentes visuais do Flutter
 import 'package:flutter/material.dart';
+import 'package:hive/hive.dart';
+import 'package:provider/provider.dart';
+import 'package:planer/theme/theme_provider.dart';
 
-// Componente principal da tela de configurações
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
 
@@ -9,63 +10,75 @@ class SettingsScreen extends StatefulWidget {
   State<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-// Estado da tela de configurações, onde são controladas as interações
 class _SettingsScreenState extends State<SettingsScreen> {
-  // Variável que controla o modo escuro
-  bool _isDarkMode = false;
-
-  // Tamanho da fonte escolhido pelo usuário
   double _fontSize = 16.0;
-
-  // Controle das notificações (ativadas ou não)
   bool _notificationsEnabled = true;
+  late Box _settingsBox;
 
-  // Função para alterar o tamanho da fonte e atualizar a tela
+  @override
+  void initState() {
+    super.initState();
+    _loadSettings(); // Carrega as configurações salvas
+  }
+
+  // Carrega os valores salvos no Hive
+  Future<void> _loadSettings() async {
+    _settingsBox = await Hive.openBox('settingsBox');
+    setState(() {
+      _fontSize = _settingsBox.get('fontSize', defaultValue: 16.0);
+      _notificationsEnabled = _settingsBox.get('notifications', defaultValue: true);
+    });
+  }
+
+  // Salva uma configuração
+  void _saveSetting(String key, dynamic value) {
+    _settingsBox.put(key, value);
+  }
+
+  // Atualiza o tamanho da fonte e salva
   void _changeFontSize(double size) {
     setState(() {
       _fontSize = size;
     });
+    _saveSetting('fontSize', size);
+  }
+
+  // Atualiza o estado da notificação e salva
+  void _toggleNotifications(bool value) {
+    setState(() {
+      _notificationsEnabled = value;
+    });
+    _saveSetting('notifications', value);
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      // Barra superior com o título
-      appBar: AppBar(title: const Text("Configurações")),
+    final themeProvider = Provider.of<ThemeProvider>(context);
 
-      // Corpo da tela com os ajustes
+    return Scaffold(
+      appBar: AppBar(title: const Text("Configurações")),
       body: Column(
         children: [
-          // Switch para alternar entre modo claro e escuro
           SwitchListTile(
             title: const Text("Modo Claro/Escuro"),
-            secondary: const Icon(Icons.brightness_6), // Ícone de brilho
-            value: _isDarkMode, // Estado atual
+            secondary: const Icon(Icons.brightness_6),
+            value: themeProvider.isDarkMode,
             onChanged: (bool value) {
-              setState(() {
-                _isDarkMode = value; // Atualiza o valor ao interagir
-              });
+              themeProvider.toggleTheme(value);
+              _saveSetting('isDarkMode', value); // Se quiser salvar o tema também
             },
           ),
-
-          // Switch para ativar/desativar notificações
           SwitchListTile(
             title: const Text("Notificações"),
-            secondary: const Icon(Icons.notifications), // Ícone de notificação
+            secondary: const Icon(Icons.notifications),
             value: _notificationsEnabled,
-            onChanged: (bool value) {
-              setState(() {
-                _notificationsEnabled = value;
-              });
-            },
+            onChanged: _toggleNotifications,
           ),
-
-          // Lista para selecionar o tamanho da fonte
           ListTile(
-            leading: const Icon(Icons.text_fields), // Ícone de texto
+            leading: const Icon(Icons.text_fields),
             title: const Text("Tamanho da Fonte"),
             trailing: DropdownButton<double>(
-              value: _fontSize, // Valor atual selecionado
+              value: _fontSize,
               items: const [
                 DropdownMenuItem(value: 14.0, child: Text("Pequena")),
                 DropdownMenuItem(value: 16.0, child: Text("Média")),
@@ -73,19 +86,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ],
               onChanged: (value) {
                 if (value != null) {
-                  _changeFontSize(value); // Atualiza o tamanho da fonte
+                  _changeFontSize(value);
                 }
               },
             ),
           ),
-
-          // Opção fictícia para configurar senha
           ListTile(
-            leading: const Icon(Icons.lock), // Ícone de cadeado
+            leading: const Icon(Icons.lock),
             title: const Text("Configurar Senha"),
-            trailing: const Icon(Icons.arrow_forward_ios), // Seta de navegação
+            trailing: const Icon(Icons.arrow_forward_ios),
             onTap: () {
-              // Exibe um aviso de que essa funcionalidade está em desenvolvimento
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text("Opção de senha em desenvolvimento")),
               );
