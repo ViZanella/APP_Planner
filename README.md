@@ -1,16 +1,42 @@
-# planer
 
-A new Flutter project.
 
-## Getting Started
+# ☕ Mocca Smart Planner
 
-This project is a starting point for a Flutter application.
+**Mocca Smart Planner** é um aplicativo de planejamento digital desenvolvido com o objetivo de proporcionar uma experiência de organização mais aconchegante, intuitiva e visualmente agradável. Inspirado pela estética do café, o app oferece duas paletas de cores em tons de marrom – uma clara e uma escura – para se adaptar ao gosto e conforto visual de cada usuário.
 
-A few resources to get you started if this is your first Flutter project:
+Com uma interface elegante e tipografias cuidadosamente escolhidas, o Mocca Smart Planner combina sofisticação, simplicidade e funcionalidade. Ele permite que os usuários:
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+- Criem e acompanhem **metas pessoais ou profissionais**
+- Registrem **eventos em uma agenda interativa**
+- Mantenham o controle de **despesas (entradas e saídas)**
+- Organizem suas tarefas diárias com **checklists personalizadas**
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+A proposta do Mocca é mais do que apenas um planner — é transformar o ato de planejar em um momento prazeroso, prático e acolhedor.
+
+---
+
+## ✨ Tecnologias Utilizadas
+
+- **Flutter / React Native** (ou sua stack específica)
+- **Firebase** (se aplicável)
+- **Figma** para prototipação e design
+- **Git/GitHub** para controle de versão
+
+---
+
+## 📱 Estilo e Design
+
+- Paletas de cor em tons de marrom (versão clara e escura)
+- Tipografias:
+  - **Magnolia Script** – destaques
+  - **Hammersmith One** – textos gerais
+  - **Playfair Display** – letras pequenas
+- Estética: **sofisticada com toque vintage e acolhedor**
+
+---
+
+## 📌 Objetivo do Projeto
+
+Criar um planner digital que una beleza visual, conforto e praticidade, promovendo bem-estar na organização do dia a dia.
+
+
